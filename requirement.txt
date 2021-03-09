@@ -1,0 +1,15 @@
+email
+smtplib
+ssl
+json
+requests
+re
+os
+datetime
+email 
+email.mime.base 
+email.mime.multipart 
+email.mime.text 
+email.mime.image 
+PIL 
+dotenv 
