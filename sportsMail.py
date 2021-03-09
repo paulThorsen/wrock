@@ -129,7 +129,7 @@ email.attach(MIMEText(html_body, "html"))
 # Create SMTP session for sending the mail
 # Create a secure SSL context
 context = ssl.create_default_context()
-with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as session:
+with smtplib.SMTP_SSL("smtp.gmail.com", PORT, context=context) as session:
     session.login(SENDER_EMAIL, EMAIL_PASSWORD)
     for recipient in RECIPIENTS:
         email["To"] = recipient
