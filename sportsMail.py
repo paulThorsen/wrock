@@ -6,13 +6,10 @@ import re
 import os
 
 from datetime import datetime, timezone
-from email import encoders
-from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from PIL import Image
 from dotenv import load_dotenv
+from io import StringIO
 
 
 def getCurrentDay():
