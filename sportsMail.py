@@ -62,6 +62,8 @@ HEADERS_DICT = {"Authorization": "Bearer " + BEARER_TOKEN}
 HTML_BUTTON_START = '<div style="margin: 20px 0 ; color: #f5f8fc; width: 100%; text-align: center; height: 50px; border-radius: 4px; background-color: #3468ad; line-height: 50px; font-weight: 600;">'
 HTML_BUTTON_END = "</div>"
 
+MAX_WIDTH = "600px"
+
 EMAIL_SUBJECT = "Daily Sports Brief"
 PORT = 465  # For SSL
 
@@ -83,10 +85,10 @@ else:
     top5 = getTop5VideoTweetsOfToday()
 
 body = "Today's Top 5 ESPN Video Tweets\n\n"
-html_body = """
+html_body = f"""
     <html>
-        <body style="color: #333;">
-        <h1 style="line-height: 40px;">Today's Top 5 ESPN Video Tweets</h1>
+        <body style="color: #333; max-width: {MAX_WIDTH};">
+            <h1 style="line-height: 40px;">Today's Top 5 ESPN Video Tweets</h1>
     """
 
 # Add tweets to body text
@@ -106,31 +108,31 @@ for i, tweet in enumerate(top5):
 
     html_body += f"<h2>{i + 1}.</h2>"
     html_body += f"<p>{text}</p>"
-    html_body += f"<img src=\"{tweet[1]['preview_image_url']}\">"
+    html_body += f"<img style=\"max-width: {MAX_WIDTH};\" src=\"{tweet[1]['preview_image_url']}\">"
     html_body += f'<a style="text-decoration: none;" href="{link.group()}">{HTML_BUTTON_START}Watch video &#8599;{HTML_BUTTON_END}</a>'
     html_body += "<hr />"
 
-html_body += """
+html_body += """        
         </body>
     </html>
     """
 
-# Create the email head (sender and subject)
-email = MIMEMultipart("alternative")
-email["From"] = SENDER_EMAIL
-email["Subject"] = EMAIL_SUBJECT
-# Add body to email
-email.attach(MIMEText(body, "plain"))
-email.attach(MIMEText(html_body, "html"))
+#  Create new email for each recipient
+for recipient in RECIPIENTS:
+    # Create the email head (sender and subject)
+    email = MIMEMultipart("alternative")
+    email["From"] = SENDER_EMAIL
+    email["Subject"] = f'{EMAIL_SUBJECT} {datetime.today().strftime("%B %d, %Y")}'
+    # Add body to email
+    email.attach(MIMEText(body, "plain"))
+    email.attach(MIMEText(html_body, "html"))
 
-# Create SMTP session for sending the mail
-# Create a secure SSL context
-context = ssl.create_default_context()
-with smtplib.SMTP_SSL("smtp.gmail.com", PORT, context=context) as session:
-    session.login(SENDER_EMAIL, EMAIL_PASSWORD)
-    for recipient in RECIPIENTS:
+    # Create SMTP session for sending the mail
+    # Create a secure SSL context
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", PORT, context=context) as session:
+        session.login(SENDER_EMAIL, EMAIL_PASSWORD)
         email["To"] = recipient
         session.sendmail(SENDER_EMAIL, recipient, email.as_string())
-        print("Mail Sent")
-    session.quit()
+        session.quit()
 # END
