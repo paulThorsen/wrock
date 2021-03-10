@@ -117,22 +117,21 @@ html_body += """
     </html>
     """
 
-#  Create new email for each recipient
-for recipient in RECIPIENTS:
-    # Create the email head (sender and subject)
-    email = MIMEMultipart("alternative")
-    email["From"] = SENDER_EMAIL
-    email["Subject"] = f'{EMAIL_SUBJECT} {datetime.today().strftime("%B %d, %Y")}'
-    # Add body to email
-    email.attach(MIMEText(body, "plain"))
-    email.attach(MIMEText(html_body, "html"))
-
-    # Create SMTP session for sending the mail
-    # Create a secure SSL context
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.gmail.com", PORT, context=context) as session:
-        session.login(SENDER_EMAIL, EMAIL_PASSWORD)
+# Create SMTP session for sending the mail
+# Create a secure SSL context
+context = ssl.create_default_context()
+with smtplib.SMTP_SSL("smtp.gmail.com", PORT, context=context) as session:
+    session.login(SENDER_EMAIL, EMAIL_PASSWORD)
+    #  Create new email for each recipient
+    for recipient in RECIPIENTS:
+        # Create the email head (sender and subject)
+        email = MIMEMultipart("alternative")
+        email["From"] = SENDER_EMAIL
+        email["Subject"] = f'{EMAIL_SUBJECT} {datetime.today().strftime("%B %d, %Y")}'
+        # Add body to email
+        email.attach(MIMEText(body, "plain"))
+        email.attach(MIMEText(html_body, "html"))
         email["To"] = recipient
         session.sendmail(SENDER_EMAIL, recipient, email.as_string())
-        session.quit()
+    session.quit()
 # END
