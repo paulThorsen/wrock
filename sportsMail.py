@@ -1,5 +1,5 @@
 # to automate email
-import email, smtplib, ssl
+import smtplib, ssl
 import json
 import requests
 import re
