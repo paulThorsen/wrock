@@ -4,6 +4,7 @@ import json
 import requests
 import re
 import os
+import pytz
 
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
@@ -16,7 +17,7 @@ def getCurrentDay():
     """
     Returns current day with Provo UTC offset
     """
-    now_utc = datetime.now()
+    now_utc = datetime.now(pytz.timezone("US/Mountain"))
     return str(now_utc).split()[0] + "T7:00:00Z"
 
 
@@ -79,7 +80,10 @@ if resp.status_code != 200:
 else:
     resp = json.loads(resp.text)
     tweets = resp["data"]
-    media = resp["includes"]["media"]
+    if resp["includes"]:
+        media = resp["includes"]["media"]
+    else:
+        media = []
     meta = resp["meta"]
 
     top5 = getTop5VideoTweetsOfToday()
@@ -90,6 +94,9 @@ html_body = f"""
         <body style="color: #333; max-width: {MAX_WIDTH};">
             <h1 style="line-height: 40px;">Today's Top 5 ESPN Video Tweets</h1>
     """
+
+if len(top5) == 0:
+    html_body += f"<p>{ACCOUNT_HANDLE} didn't post any videos today ¯\_(ツ)_/¯</p>"
 
 # Add tweets to body text
 for i, tweet in enumerate(top5):
