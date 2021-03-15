@@ -22,11 +22,11 @@ def getCurrentDay():
 
 
 # Might redo this one day to make it more readable but this was more fun, I guess...
-def getTop5VideoTweetsOfToday():
+def getTop5VideoTweetsOfToday(tweets: []):
     """
     Create (tweet, mediaExp) tuples that are sorted (descending order) by view count - top 5 most viewed video tweets are returned as [(tweet, mediaExp)...]
     """
-    return sorted(
+    tweets = sorted(
         [
             (
                 next(
@@ -47,6 +47,8 @@ def getTop5VideoTweetsOfToday():
         key=lambda tweet: tweet[1]["public_metrics"]["view_count"],
         reverse=True,
     )[:5]
+    tweets = list(filter(lambda tweet: tweet[0]["text"][:2] != "RT", tweets))
+    return tweets
 
 
 # Load ENV vars
@@ -86,7 +88,7 @@ else:
         media = []
     meta = resp["meta"]
 
-    top5 = getTop5VideoTweetsOfToday()
+    top5 = getTop5VideoTweetsOfToday(tweets)
 
 body = "Today's Top 5 ESPN Video Tweets\n\n"
 html_body = f"""
