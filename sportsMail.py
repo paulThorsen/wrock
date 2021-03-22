@@ -82,7 +82,7 @@ if resp.status_code != 200:
 else:
     resp = json.loads(resp.text)
     tweets = resp["data"]
-    if resp["includes"]:
+    if resp["includes"]["media"]:
         media = resp["includes"]["media"]
     else:
         media = []
