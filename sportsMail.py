@@ -102,6 +102,45 @@ def parseResp(resp, tweets, media):
     return ([], [])
 
 
+def createEmail(top5):
+    body = "Today's Top 5 ESPN Video Tweets\n\n"
+    html_body = f"""
+        <html>
+            <body style="color: #333; max-width: {MAX_WIDTH};">
+                <h1 style="line-height: 40px;">Today's Top 5 Sports Video Tweets</h1>
+        """
+
+    if len(top5) == 0:
+        html_body += "<p>No cool videos were posted today ¯\_(ツ)_/¯</p>"
+
+    # Add tweets to body text
+    for i, tweet in enumerate(top5):
+        # Exctract link to tweet - should be last link in tweet text
+        link = re.search("https://t.co/\S+$", tweet[0]["text"])
+
+        text = "{}\n\n".format(
+            tweet[0]["text"][
+                # Remove link from body text
+                : re.search("https://t.co/\S+$", tweet[0]["text"]).start()
+            ]
+            # Remove new lines in body text
+            .replace("\n", " "),
+        )
+        body += text
+
+        html_body += f"<h2>{i + 1}.</h2>"
+        html_body += f"<p>{text}</p>"
+        html_body += f"<img style=\"max-width: {MAX_WIDTH};\" src=\"{tweet[1]['preview_image_url']}\">"
+        html_body += f'<a style="text-decoration: none;" href="{link.group()}">{HTML_BUTTON_START}Watch video &#8599;{HTML_BUTTON_END}</a>'
+        html_body += "<hr />"
+
+    html_body += """        
+            </body>
+        </html>
+        """
+    return (body, html_body)
+
+
 # Load ENV vars
 load_dotenv()
 
@@ -133,41 +172,6 @@ for handle in ACCOUNT_HANDLES:
     media += mediaArr
 
 top5 = getTop5VideoTweetsOfToday(tweets)
-
-body = "Today's Top 5 ESPN Video Tweets\n\n"
-html_body = f"""
-    <html>
-        <body style="color: #333; max-width: {MAX_WIDTH};">
-            <h1 style="line-height: 40px;">Today's Top 5 Sports Video Tweets</h1>
-    """
-
-if len(top5) == 0:
-    html_body += "<p>No cool videos were posted today ¯\_(ツ)_/¯</p>"
-
-# Add tweets to body text
-for i, tweet in enumerate(top5):
-    # Exctract link to tweet - should be last link in tweet text
-    link = re.search("https://t.co/\S+$", tweet[0]["text"])
-
-    text = "{}\n\n".format(
-        tweet[0]["text"][
-            # Remove link from body text
-            : re.search("https://t.co/\S+$", tweet[0]["text"]).start()
-        ]
-        # Remove new lines in body text
-        .replace("\n", " "),
-    )
-    body += text
-
-    html_body += f"<h2>{i + 1}.</h2>"
-    html_body += f"<p>{text}</p>"
-    html_body += f"<img style=\"max-width: {MAX_WIDTH};\" src=\"{tweet[1]['preview_image_url']}\">"
-    html_body += f'<a style="text-decoration: none;" href="{link.group()}">{HTML_BUTTON_START}Watch video &#8599;{HTML_BUTTON_END}</a>'
-    html_body += "<hr />"
-
-html_body += """        
-        </body>
-    </html>
-    """
+body, html_body = createEmail(top5)
 
 sendEmails(PORT, SENDER_EMAIL, EMAIL_PASSWORD, RECIPIENTS, EMAIL_SUBJECT)
