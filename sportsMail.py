@@ -159,7 +159,7 @@ MAX_WIDTH = "600px"
 EMAIL_SUBJECT = "Daily Sports Brief"
 PORT = 465  # For SSL
 
-ACCOUNT_HANDLES = ["HofHighlights"]
+ACCOUNT_HANDLES = ["espn", "HoHighlights", "BleacherReport"]
 
 top5 = []
 tweets = []
