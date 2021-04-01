@@ -36,6 +36,7 @@ def getTop5VideoTweetsOfToday(tweets):
                         tweet
                         for tweet in tweets
                         if "attachments" in tweet
+                        and "media_keys" in tweet["attachments"]
                         and mediaExp["media_key"]
                         == tweet["attachments"]["media_keys"][0]
                     ),
