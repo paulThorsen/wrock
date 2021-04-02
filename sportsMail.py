@@ -13,6 +13,23 @@ from dotenv import load_dotenv
 from io import StringIO
 from types import SimpleNamespace
 
+# Load ENV vars
+load_dotenv()
+
+BEARER_TOKEN = os.environ.get("TWITTER_API_BEARER_TOKEN")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
+RECIPIENTS = str(os.environ.get("RECIPIENTS")).split("...")
+TWITTER_API_URI = "https://api.twitter.com/2/tweets/search/recent?query=from:{}&start_time={}&max_results=100&tweet.fields=public_metrics,created_at,attachments,author_id&expansions=attachments.media_keys&media.fields=preview_image_url,type,duration_ms,width,public_metrics"
+HEADERS_DICT = {"Authorization": "Bearer {}".format(BEARER_TOKEN)}
+HTML_BUTTON_START = '<div style="margin: 20px 0 ; color: #f5f8fc; width: 100%; text-align: center; height: 50px; border-radius: 4px; background-color: #3468ad; line-height: 50px; font-weight: 600;">'
+HTML_BUTTON_END = "</div>"
+MAX_WIDTH = "600px"
+EMAIL_SUBJECT = "Daily Sports Brief"
+PORT = 465  # For SSL
+
+ACCOUNT_HANDLES = ["espn", "HoHighlights", "BleacherReport"]
+
 
 class VideoTweet:
     """
@@ -179,23 +196,6 @@ def createEmail(top5):
         """
     return (body, html_body)
 
-
-# Load ENV vars
-load_dotenv()
-
-BEARER_TOKEN = os.environ.get("TWITTER_API_BEARER_TOKEN")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
-EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
-RECIPIENTS = str(os.environ.get("RECIPIENTS")).split("...")
-TWITTER_API_URI = "https://api.twitter.com/2/tweets/search/recent?query=from:{}&start_time={}&max_results=100&tweet.fields=public_metrics,created_at,attachments,author_id&expansions=attachments.media_keys&media.fields=preview_image_url,type,duration_ms,width,public_metrics"
-HEADERS_DICT = {"Authorization": "Bearer {}".format(BEARER_TOKEN)}
-HTML_BUTTON_START = '<div style="margin: 20px 0 ; color: #f5f8fc; width: 100%; text-align: center; height: 50px; border-radius: 4px; background-color: #3468ad; line-height: 50px; font-weight: 600;">'
-HTML_BUTTON_END = "</div>"
-MAX_WIDTH = "600px"
-EMAIL_SUBJECT = "Daily Sports Brief"
-PORT = 465  # For SSL
-
-ACCOUNT_HANDLES = ["espn", "HoHighlights", "BleacherReport"]
 
 top5 = []
 tweets = []
