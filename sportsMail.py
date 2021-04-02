@@ -11,6 +11,24 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 from io import StringIO
+from types import SimpleNamespace
+
+
+class VideoTweet:
+    """
+    A Tweet that has an embedded video
+
+    Attributes:
+        tweet: the data from the tweet. Fields should include public_metrics, created_at, attachments, author_id, text, id
+        media: the associated video media. Fields should include public_metrics, type, preview_image_url, duration_ms, media_key, width
+    """
+
+    def __init__(self, tweet, media):
+        self.tweet = tweet
+        self.media = media
+
+    tweet = None
+    media = None
 
 
 def getCurrentDay():
@@ -24,7 +42,7 @@ def getCurrentDay():
 # Might redo this one day to make it more readable but this was more fun, I guess...
 def getTop5VideoTweetsOfToday(tweets):
     """
-    Create (tweet, mediaExp) tuples that are sorted (descending order) by view count - top 5 most viewed video tweets are returned as [(tweet, mediaExp)...]
+    Returns top 5 most watched VideoTweets that are sorted (descending order) by view count
     """
     if len(tweets) == 0:
         return []
@@ -50,20 +68,35 @@ def getTop5VideoTweetsOfToday(tweets):
         key=lambda tweet: tweet[1]["public_metrics"]["view_count"],
         reverse=True,
     )[:5]
+    # Remove retweets - original content only!
     tweets = list(filter(lambda tweet: tweet[0]["text"][:2] != "RT", tweets))
     return tweets
 
 
 def fetchTweetsFrom(handle, url, headers):
+    """
+    Returns all tweets from given handle for current day.
+
+        Parameters:
+            handle (str): twitter account
+            url (str): Base Twitter API
+            headers ({"Authorization": "Bearer " + BEARER_TOKEN}): Object with Authorization bearer token
+
+        Returns:
+            respJson (dict): see /json.json for json structure of tweets
+
+    """
     resp = requests.get(
         url.format(handle, getCurrentDay()),
         headers=headers,
     )
     if resp.status_code != 200:
         # probably should add some better error handling
-        print(resp.text)
+        print(resp.status_code, resp.text)
+        raise Exception(resp.status_code, resp.text)
         exit
-    return json.loads(resp.text)
+    # respJson = json.loads(resp.text, object_hook=lambda d: SimpleNamespace(**d))
+    return resp.json()
 
 
 def sendEmails(port, sender_email, password, recipients, email_subject):
@@ -90,6 +123,7 @@ def sendEmails(port, sender_email, password, recipients, email_subject):
 
 
 def parseResp(resp, tweets, media):
+    print(resp)
     if "errors" in resp.keys():
         print(resp["errors"][0]["message"])
         return
@@ -150,13 +184,10 @@ SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 RECIPIENTS = str(os.environ.get("RECIPIENTS")).split("...")
 TWITTER_API_URI = "https://api.twitter.com/2/tweets/search/recent?query=from:{}&start_time={}&max_results=100&tweet.fields=public_metrics,created_at,attachments,author_id&expansions=attachments.media_keys&media.fields=preview_image_url,type,duration_ms,width,public_metrics"
-HEADERS_DICT = {"Authorization": "Bearer " + BEARER_TOKEN}
-
+HEADERS_DICT = {"Authorization": "Bearer {}".format(BEARER_TOKEN)}
 HTML_BUTTON_START = '<div style="margin: 20px 0 ; color: #f5f8fc; width: 100%; text-align: center; height: 50px; border-radius: 4px; background-color: #3468ad; line-height: 50px; font-weight: 600;">'
 HTML_BUTTON_END = "</div>"
-
 MAX_WIDTH = "600px"
-
 EMAIL_SUBJECT = "Daily Sports Brief"
 PORT = 465  # For SSL
 
@@ -173,6 +204,7 @@ for handle in ACCOUNT_HANDLES:
     media += mediaArr
 
 top5 = getTop5VideoTweetsOfToday(tweets)
+print(*list(map(lambda tweet: tweet[0]["text"], top5)))
 body, html_body = createEmail(top5)
 
 sendEmails(PORT, SENDER_EMAIL, EMAIL_PASSWORD, RECIPIENTS, EMAIL_SUBJECT)
