@@ -46,31 +46,35 @@ def getTop5VideoTweetsOfToday(tweets):
     """
     if len(tweets) == 0:
         return []
-    tweets = sorted(
-        [
-            (
-                next(
-                    (
-                        tweet
-                        for tweet in tweets
-                        if "attachments" in tweet
-                        and "media_keys" in tweet["attachments"]
-                        and mediaExp["media_key"]
-                        == tweet["attachments"]["media_keys"][0]
-                    ),
-                    None,
+    # Create VideoTweets from data
+    videoTweets = [
+        VideoTweet(
+            next(
+                (
+                    tweet
+                    for tweet in tweets
+                    if "attachments" in tweet
+                    and "media_keys" in tweet["attachments"]
+                    and mediaExp["media_key"] == tweet["attachments"]["media_keys"][0]
                 ),
-                mediaExp,
-            )
-            for mediaExp in media
-            if mediaExp["type"] == "video"
-        ],
-        key=lambda tweet: tweet[1]["public_metrics"]["view_count"],
+                None,
+            ),
+            mediaExp,
+        )
+        for mediaExp in media
+        if mediaExp["type"] == "video"
+    ]
+    print(videoTweets)
+    videoTweets = sorted(
+        videoTweets,
+        key=lambda videoTweet: videoTweet.media["public_metrics"]["view_count"],
         reverse=True,
     )[:5]
     # Remove retweets - original content only!
-    tweets = list(filter(lambda tweet: tweet[0]["text"][:2] != "RT", tweets))
-    return tweets
+    videoTweets = list(
+        filter(lambda videoTweet: videoTweet.tweet["text"][:2] != "RT", videoTweets)
+    )
+    return videoTweets
 
 
 def fetchTweetsFrom(handle, url, headers):
@@ -151,12 +155,12 @@ def createEmail(top5):
     # Add tweets to body text
     for i, tweet in enumerate(top5):
         # Exctract link to tweet - should be last link in tweet text
-        link = re.search("https://t.co/\S+$", tweet[0]["text"])
+        link = re.search("https://t.co/\S+$", tweet.tweet["text"])
 
         text = "{}\n\n".format(
-            tweet[0]["text"][
+            tweet.tweet["text"][
                 # Remove link from body text
-                : re.search("https://t.co/\S+$", tweet[0]["text"]).start()
+                : re.search("https://t.co/\S+$", tweet.tweet["text"]).start()
             ]
             # Remove new lines in body text
             .replace("\n", " "),
@@ -165,7 +169,7 @@ def createEmail(top5):
 
         html_body += f"<h2>{i + 1}.</h2>"
         html_body += f"<p>{text}</p>"
-        html_body += f"<img style=\"max-width: {MAX_WIDTH};\" src=\"{tweet[1]['preview_image_url']}\">"
+        html_body += f"<img style=\"max-width: {MAX_WIDTH};\" src=\"{tweet.media['preview_image_url']}\">"
         html_body += f'<a style="text-decoration: none;" href="{link.group()}">{HTML_BUTTON_START}Watch video &#8599;{HTML_BUTTON_END}</a>'
         html_body += "<hr />"
 
@@ -204,7 +208,7 @@ for handle in ACCOUNT_HANDLES:
     media += mediaArr
 
 top5 = getTop5VideoTweetsOfToday(tweets)
-print(*list(map(lambda tweet: tweet[0]["text"], top5)))
+print(*list(map(lambda tweet: tweet.tweet["text"], top5)))
 body, html_body = createEmail(top5)
 
 sendEmails(PORT, SENDER_EMAIL, EMAIL_PASSWORD, RECIPIENTS, EMAIL_SUBJECT)
