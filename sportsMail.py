@@ -70,26 +70,26 @@ def getTop5VideoTweetsOfToday(tweets):
                 (
                     tweet
                     for tweet in tweets
-                    if "attachments" in tweet
-                    and "media_keys" in tweet["attachments"]
-                    and mediaExp["media_key"] == tweet["attachments"]["media_keys"][0]
+                    if hasattr(tweet, "attachments")
+                    and hasattr(tweet.attachments, "media_keys")
+                    and mediaExp.media_key == tweet.attachments.media_keys[0]
                 ),
                 None,
             ),
             mediaExp,
         )
         for mediaExp in media
-        if mediaExp["type"] == "video"
+        if mediaExp.type == "video"
     ]
     print(videoTweets)
     videoTweets = sorted(
         videoTweets,
-        key=lambda videoTweet: videoTweet.media["public_metrics"]["view_count"],
+        key=lambda videoTweet: videoTweet.media.public_metrics.view_count,
         reverse=True,
     )[:5]
     # Remove retweets - original content only!
     videoTweets = list(
-        filter(lambda videoTweet: videoTweet.tweet["text"][:2] != "RT", videoTweets)
+        filter(lambda videoTweet: videoTweet.tweet.text[:2] != "RT", videoTweets)
     )
     return videoTweets
 
@@ -116,8 +116,9 @@ def fetchTweetsFrom(handle, url, headers):
         print(resp.status_code, resp.text)
         raise Exception(resp.status_code, resp.text)
         exit
-    # respJson = json.loads(resp.text, object_hook=lambda d: SimpleNamespace(**d))
-    return resp.json()
+    # Convert response to object
+    respJson = json.loads(resp.text, object_hook=lambda d: SimpleNamespace(**d))
+    return respJson
 
 
 def sendEmails(port, sender_email, password, recipients, email_subject):
@@ -144,16 +145,16 @@ def sendEmails(port, sender_email, password, recipients, email_subject):
 
 
 def parseResp(resp, tweets, media):
-    print(resp)
-    if "errors" in resp.keys():
-        print(resp["errors"][0]["message"])
+    # print(resp)
+    if hasattr(resp, "errors"):
+        print(resp.errors[0].message)
         return
     else:
-        meta = resp["meta"]
-        if meta["result_count"] > 0:
-            tweets = resp["data"]
-            if "includes" in resp.keys() and "media" in resp["includes"].keys():
-                media = resp["includes"]["media"]
+        meta = resp.meta
+        if meta.result_count > 0:
+            tweets = resp.data
+            if hasattr(resp, "includes") and hasattr(resp.includes, "media"):
+                media = resp.includes.media
                 return (tweets, media)
     return ([], [])
 
@@ -172,12 +173,12 @@ def createEmail(top5):
     # Add tweets to body text
     for i, tweet in enumerate(top5):
         # Exctract link to tweet - should be last link in tweet text
-        link = re.search("https://t.co/\S+$", tweet.tweet["text"])
+        link = re.search("https://t.co/\S+$", tweet.tweet.text)
 
         text = "{}\n\n".format(
-            tweet.tweet["text"][
+            tweet.tweet.text[
                 # Remove link from body text
-                : re.search("https://t.co/\S+$", tweet.tweet["text"]).start()
+                : re.search("https://t.co/\S+$", tweet.tweet.text).start()
             ]
             # Remove new lines in body text
             .replace("\n", " "),
@@ -186,7 +187,7 @@ def createEmail(top5):
 
         html_body += f"<h2>{i + 1}.</h2>"
         html_body += f"<p>{text}</p>"
-        html_body += f"<img style=\"max-width: {MAX_WIDTH};\" src=\"{tweet.media['preview_image_url']}\">"
+        html_body += f'<img style="max-width: {MAX_WIDTH};" src="{tweet.media.preview_image_url}">'
         html_body += f'<a style="text-decoration: none;" href="{link.group()}">{HTML_BUTTON_START}Watch video &#8599;{HTML_BUTTON_END}</a>'
         html_body += "<hr />"
 
@@ -208,7 +209,6 @@ for handle in ACCOUNT_HANDLES:
     media += mediaArr
 
 top5 = getTop5VideoTweetsOfToday(tweets)
-print(*list(map(lambda tweet: tweet.tweet["text"], top5)))
 body, html_body = createEmail(top5)
 
 sendEmails(PORT, SENDER_EMAIL, EMAIL_PASSWORD, RECIPIENTS, EMAIL_SUBJECT)
