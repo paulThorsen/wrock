@@ -64,6 +64,7 @@ def getTop5VideoTweetsOfToday(tweets):
     if len(tweets) == 0:
         return []
     # Create VideoTweets from data
+    # Create VideoTweet if there is an associated media_key and is not a RT
     videoTweets = [
         VideoTweet(
             next(
@@ -73,6 +74,7 @@ def getTop5VideoTweetsOfToday(tweets):
                     if hasattr(tweet, "attachments")
                     and hasattr(tweet.attachments, "media_keys")
                     and mediaExp.media_key == tweet.attachments.media_keys[0]
+                    and tweet.text[:2] != "RT"
                 ),
                 None,
             ),
@@ -87,10 +89,6 @@ def getTop5VideoTweetsOfToday(tweets):
         key=lambda videoTweet: videoTweet.media.public_metrics.view_count,
         reverse=True,
     )[:5]
-    # Remove retweets - original content only!
-    videoTweets = list(
-        filter(lambda videoTweet: videoTweet.tweet.text[:2] != "RT", videoTweets)
-    )
     return videoTweets
 
 
