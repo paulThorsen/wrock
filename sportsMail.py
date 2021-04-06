@@ -27,6 +27,7 @@ HTML_BUTTON_END = "</div>"
 MAX_WIDTH = "600px"
 EMAIL_SUBJECT = "Daily Sports Brief"
 PORT = 465  # For SSL
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 ACCOUNT_HANDLES = ["espn", "HoHighlights", "BleacherReport"]
 
@@ -46,6 +47,14 @@ class VideoTweet:
 
     tweet = None
     media = None
+
+
+def scoreVideoTweet(videoTweet):
+    seconds_old = (
+        datetime.utcnow()
+        - datetime.strptime(videoTweet.tweet.created_at, DATETIME_FORMAT)
+    ).total_seconds()
+    return videoTweet.media.public_metrics.view_count / seconds_old
 
 
 def getCurrentDay():
@@ -83,10 +92,9 @@ def getTop5VideoTweetsOfToday(tweets):
         for mediaExp in media
         if mediaExp.type == "video"
     ]
-    print(videoTweets)
     videoTweets = sorted(
         videoTweets,
-        key=lambda videoTweet: videoTweet.media.public_metrics.view_count,
+        key=lambda videoTweet: scoreVideoTweet(videoTweet),
         reverse=True,
     )[:5]
     return videoTweets
