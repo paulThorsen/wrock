@@ -50,6 +50,9 @@ class VideoTweet:
 
 
 def scoreVideoTweet(videoTweet):
+    """
+    Returns videoTweet score: number of view divided by how many seconds old the tweet is
+    """
     seconds_old = (
         datetime.utcnow()
         - datetime.strptime(videoTweet.tweet.created_at, DATETIME_FORMAT)
@@ -128,6 +131,9 @@ def fetchTweetsFrom(handle, url, headers):
 
 
 def sendEmails(port, sender_email, password, recipients, email_subject):
+    """
+    Send emails to all recipients
+    """
     # Create SMTP session for sending the mail
     # Create a secure SSL context
     context = ssl.create_default_context()
@@ -151,6 +157,9 @@ def sendEmails(port, sender_email, password, recipients, email_subject):
 
 
 def parseResp(resp, tweets, media):
+    """
+    Parses JSON respons and returns ([tweets], [media_keys]) tuple
+    """
     # print(resp)
     if hasattr(resp, "errors"):
         print(resp.errors[0].message)
@@ -166,6 +175,9 @@ def parseResp(resp, tweets, media):
 
 
 def createEmail(top5):
+    """
+    Create HTML email to be sent to recipients
+    """
     body = "Today's Top 5 ESPN Video Tweets\n\n"
     html_body = f"""
         <html>
