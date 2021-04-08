@@ -49,11 +49,14 @@ class VideoTweet:
     media = None
 
 
+def fetchAccountInfo(handle):
+    pass
+
+
 def scoreVideoTweet(videoTweet):
     """
     Returns videoTweet score: number of view divided by how many seconds old the tweet is
     """
-    print(videoTweet.media)
     seconds_old = (
         datetime.utcnow()
         - datetime.strptime(videoTweet.tweet.created_at, DATETIME_FORMAT)
@@ -166,7 +169,6 @@ def parseResp(resp, tweets, media):
     """
     Parses JSON respons and returns ([tweets], [media_keys]) tuple
     """
-    # print(resp)
     if hasattr(resp, "errors"):
         print(resp.errors[0].message)
         return
@@ -225,12 +227,14 @@ def createEmail(top5):
 top5 = []
 tweets = []
 media = []
+accountInfo = []
 
 for handle in ACCOUNT_HANDLES:
     resp = fetchTweetsFrom(handle, TWITTER_API_URI, HEADERS_DICT)
     tweetsArr, mediaArr = parseResp(resp, tweets, media)
     tweets += tweetsArr
     media += mediaArr
+    accountInfo.append(fetchAccountInfo(handle))
 
 top5 = getTop5VideoTweetsOfToday(tweets)
 body, html_body = createEmail(top5)
