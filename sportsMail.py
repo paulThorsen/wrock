@@ -53,6 +53,7 @@ def scoreVideoTweet(videoTweet):
     """
     Returns videoTweet score: number of view divided by how many seconds old the tweet is
     """
+    print(videoTweet.media)
     seconds_old = (
         datetime.utcnow()
         - datetime.strptime(videoTweet.tweet.created_at, DATETIME_FORMAT)
@@ -86,7 +87,6 @@ def getTop5VideoTweetsOfToday(tweets):
                     if hasattr(tweet, "attachments")
                     and hasattr(tweet.attachments, "media_keys")
                     and mediaExp.media_key == tweet.attachments.media_keys[0]
-                    and tweet.text[:2] != "RT"
                 ),
                 None,
             ),
@@ -95,6 +95,12 @@ def getTop5VideoTweetsOfToday(tweets):
         for mediaExp in media
         if mediaExp.type == "video"
     ]
+    # Remove RT and other tweets where None is returned from next method above
+    videoTweets = filter(
+        lambda videoTweet: videoTweet.tweet.text[:2] != "RT"
+        and videoTweet.tweet != None,
+        videoTweets,
+    )
     videoTweets = sorted(
         videoTweets,
         key=lambda videoTweet: scoreVideoTweet(videoTweet),
