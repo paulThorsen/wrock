@@ -20,7 +20,11 @@ BEARER_TOKEN = os.environ.get("TWITTER_API_BEARER_TOKEN")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 RECIPIENTS = str(os.environ.get("RECIPIENTS")).split("...")
-TWITTER_API_URI = "https://api.twitter.com/2/tweets/search/recent?query=from:{}&start_time={}&max_results=100&tweet.fields=public_metrics,created_at,attachments,author_id&expansions=attachments.media_keys&media.fields=preview_image_url,type,duration_ms,width,public_metrics"
+TWEETS_API_URI = "https://api.twitter.com/2/tweets/search/recent?query=from:{}&start_time={}&max_results=100&tweet.fields=public_metrics,created_at,attachments,author_id&expansions=attachments.media_keys&media.fields=preview_image_url,type,duration_ms,width,public_metrics"
+ACCOUNTS_API_URI = (
+    "https://api.twitter.com/2/users/by/username/{}?user.fields=public_metrics"
+)
+
 HEADERS_DICT = {"Authorization": "Bearer {}".format(BEARER_TOKEN)}
 HTML_BUTTON_START = '<div style="margin: 20px 0 ; color: #f5f8fc; width: 100%; text-align: center; height: 50px; border-radius: 4px; background-color: #3468ad; line-height: 50px; font-weight: 600;">'
 HTML_BUTTON_END = "</div>"
@@ -49,19 +53,48 @@ class VideoTweet:
     media = None
 
 
-def fetchAccountInfo(handle):
-    pass
+def fetchAccountInfo(handle, url, headers):
+    """
+    Returns info a account from handle.
+
+        Parameters:
+            handle (str): twitter account
+            url (str): Base Twitter API
+            headers ({"Authorization": "Bearer " + BEARER_TOKEN}): Object with Authorization bearer token
+
+        Returns:
+            respObj (obj)
+
+    """
+    resp = requests.get(
+        url.format(handle),
+        headers=headers,
+    )
+    if resp.status_code != 200:
+        # probably should add some better error handling
+        print(resp.status_code, resp.text)
+        raise Exception(resp.status_code, resp.text)
+        exit
+    # Convert response to object
+    respObj = json.loads(resp.text, object_hook=lambda d: SimpleNamespace(**d))
+    print(respObj)
+    return respObj.data
 
 
-def scoreVideoTweet(videoTweet):
+def scoreVideoTweet(videoTweet, accountInfo):
     """
     Returns videoTweet score: number of view divided by how many seconds old the tweet is
     """
+    # TODO rework this scoring alg
     seconds_old = (
         datetime.utcnow()
         - datetime.strptime(videoTweet.tweet.created_at, DATETIME_FORMAT)
     ).total_seconds()
-    return videoTweet.media.public_metrics.view_count / seconds_old
+    score = (
+        videoTweet.media.public_metrics.view_count / (seconds_old / 2)
+    ) / accountInfo.public_metrics.followers_count
+    print(str(score) + videoTweet.tweet.text)
+    return score
 
 
 def getCurrentDay():
@@ -73,7 +106,7 @@ def getCurrentDay():
 
 
 # Might redo this one day to make it more readable but this was more fun, I guess...
-def getTop5VideoTweetsOfToday(tweets):
+def getTop5VideoTweetsOfToday(tweets, accountsInfo):
     """
     Returns top 5 most watched VideoTweets that are sorted (descending order) by view count
     """
@@ -106,7 +139,17 @@ def getTop5VideoTweetsOfToday(tweets):
     )
     videoTweets = sorted(
         videoTweets,
-        key=lambda videoTweet: scoreVideoTweet(videoTweet),
+        key=lambda videoTweet: scoreVideoTweet(
+            videoTweet,
+            next(
+                (
+                    account
+                    for account in accountsInfo
+                    if account.id == videoTweet.tweet.author_id
+                ),
+                None,
+            ),
+        ),
         reverse=True,
     )[:5]
     return videoTweets
@@ -135,8 +178,8 @@ def fetchTweetsFrom(handle, url, headers):
         raise Exception(resp.status_code, resp.text)
         exit
     # Convert response to object
-    respJson = json.loads(resp.text, object_hook=lambda d: SimpleNamespace(**d))
-    return respJson
+    respObj = json.loads(resp.text, object_hook=lambda d: SimpleNamespace(**d))
+    return respObj
 
 
 def sendEmails(port, sender_email, password, recipients, email_subject):
@@ -227,16 +270,16 @@ def createEmail(top5):
 top5 = []
 tweets = []
 media = []
-accountInfo = []
+accountsInfo = []
 
 for handle in ACCOUNT_HANDLES:
-    resp = fetchTweetsFrom(handle, TWITTER_API_URI, HEADERS_DICT)
+    resp = fetchTweetsFrom(handle, TWEETS_API_URI, HEADERS_DICT)
     tweetsArr, mediaArr = parseResp(resp, tweets, media)
     tweets += tweetsArr
     media += mediaArr
-    accountInfo.append(fetchAccountInfo(handle))
+    accountsInfo.append(fetchAccountInfo(handle, ACCOUNTS_API_URI, HEADERS_DICT))
 
-top5 = getTop5VideoTweetsOfToday(tweets)
+top5 = getTop5VideoTweetsOfToday(tweets, accountsInfo)
 body, html_body = createEmail(top5)
 
 sendEmails(PORT, SENDER_EMAIL, EMAIL_PASSWORD, RECIPIENTS, EMAIL_SUBJECT)
